@@ -34,6 +34,7 @@ pip install -r requirements.txt
 ```
 
 ## 🎯 Ingest data
+Create a folder in the project root. Name it data, then create another folder called pdfs.
 Provide your PDFs in `data/pdfs/` and your stock data in `data/stocks.csv`, then run:
 ```bash
 python3.11 -m ingest.pdf_ingestor ./data/pdfs/
