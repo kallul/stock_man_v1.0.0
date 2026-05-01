@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+ollama
+chromadb
+pypdf
+pandas
+matplotlib
+scikit-learn
+seaborn
+plotly
+python-multipart
+python-dotenv
+pytest
+httpx
+streamlit
