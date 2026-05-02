@@ -1,0 +1,19 @@
+name: CI/CD Pipeline for Stock Research Assistant
+
+on:
+  push:
+    branches: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      
+    - uses: actions/checkout@v4
+    - name: CI-CD first step
+
+
+      run:
+        echo "CI-CD first step"
+        uname -a
