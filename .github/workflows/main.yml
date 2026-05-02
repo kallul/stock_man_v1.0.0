@@ -1,0 +1,19 @@
+name: CI/CD Pipeline for Stock Research Assistant
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: CICD first step
+
+      run: |
+        echo "CICD first step"
+        uname -a
