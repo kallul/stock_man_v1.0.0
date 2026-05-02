@@ -3,8 +3,6 @@ name: CI/CD Pipeline for Stock Research Assistant
 on:
   push:
     branches: main
-  pull_request:
-    branches: main
 
 jobs:
   build:
@@ -12,8 +10,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: CICD first step
+    - name: CI-CD first step
 
-      run: |
-        echo "CICD first step"
+      run:
+        echo "CI-CD first step"
         uname -a
