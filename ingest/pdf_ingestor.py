@@ -18,36 +18,44 @@ def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str
         start += chunk_size - overlap
     return chunks
 
-def ingest_pdf(pdf_path: str):
+def ingest_pdf(pdf_path: str) -> int:
+    """Ingest a PDF into ChromaDB. Returns the number of chunks successfully added."""
     print(f"Ingesting {pdf_path}...")
     reader = PdfReader(pdf_path)
     filename = os.path.basename(pdf_path)
-    
+
     chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
     collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME)
 
+    # Remove any existing chunks for this file before re-ingesting
+    existing = collection.get(where={"source": filename})
+    if existing["ids"]:
+        collection.delete(ids=existing["ids"])
+
+    chunks_added = 0
     for i, page in enumerate(reader.pages):
         text = page.extract_text()
         if not text:
             continue
-            
+
         chunks = chunk_text(text)
-        
+
         for j, chunk in enumerate(chunks):
             try:
                 response = ollama.embeddings(model=EMBED_MODEL, prompt=chunk)
                 embedding = response["embedding"]
-                
                 doc_id = f"{filename}_p{i+1}_{j}"
-                
                 collection.add(
                     ids=[doc_id],
                     embeddings=[embedding],
                     documents=[chunk],
-                    metadatas=[{"source": filename, "page": i + 1}]
+                    metadatas=[{"source": filename, "page": i + 1}],
                 )
+                chunks_added += 1
             except Exception as e:
                 print(f"Error embedding chunk {j} of page {i+1} in {filename}: {e}")
+
+    return chunks_added
 
 def ingest_folder(folder_path: str):
     pdf_files = glob.glob(os.path.join(folder_path, "*.pdf"))

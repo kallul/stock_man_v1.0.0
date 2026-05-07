@@ -8,39 +8,48 @@ import requests
 from orchestrator import run_query, search_documents
 from ingest.pdf_ingestor import ingest_pdf
 from ingest.csv_ingestor import ingest_csv
+from retrieval.vector_retriever import list_documents, delete_document
 from config import OLLAMA_BASE_URL, LLM_MODEL, EMBED_MODEL
 from config import AppConfig
 
 
-app = FastAPI(title = "Stock Investment Research Assistant")
+app = FastAPI(title="Stock Investment Research Assistant")
+
 
 class QueryRequest(BaseModel):
     question: str = Field(
-        ..., 
-        min_length = 3, 
-        max_length = 1000,
-        description = "The research question to ask the assistant. It can be about specific stocks, macroeconomic trends, or both (hybrid).",
-        examples= [ "What is the price and target for TSLA?", "How does rising inflation impact the technology sector?" ]
+        ...,
+        min_length=3,
+        max_length=1000,
+        description="The research question to ask the assistant.",
+        examples=["What is the price and target for TSLA?", "How does rising inflation impact the technology sector?"],
     )
+
 
 class SearchRequest(BaseModel):
     query: str = Field(
-        ..., 
-        min_length = 2, 
-        max_length = 500,
-        description = "The keyword or phrase to search for within the indexed PDF documents.",
-        examples = ["interest rates", "economic growth forecast"]
+        ...,
+        min_length=2,
+        max_length=500,
+        description="Keyword or phrase to search for within indexed PDF documents.",
+        examples=["interest rates", "economic growth forecast"],
     )
     filename: str = Field(
-        None, 
-        description="Optional: Filter search results to a specific file (e.g., 'Q3_Outlook.pdf').",
-        examples=["Eye on the Market.pdf"]
+        None,
+        description="Optional: restrict search to a specific indexed file.",
+        examples=["Eye on the Market.pdf"],
+    )
+    n_results: int = Field(
+        10,
+        ge=1,
+        le=30,
+        description="Number of results to return (1–30).",
     )
 
 
 @app.get("/")
 async def root():
-    return { 
+    return {
         "name": AppConfig.APP_NAME,
         "version": AppConfig.APP_VERSION,
         "description": AppConfig.APP_DESCRIPTION,
@@ -51,7 +60,7 @@ async def root():
         "url": AppConfig.APP_URL,
         "debug": AppConfig.APP_DEBUG,
         "env": AppConfig.APP_ENV,
-        "message": "Stock Investment Research Assistant API is running"
+        "message": "Stock Investment Research Assistant API is running",
     }
 
 
@@ -62,13 +71,38 @@ async def query_endpoint(request: QueryRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        
+
 
 @app.post("/search")
 async def search_endpoint(request: SearchRequest):
     try:
-        results = search_documents(request.query, request.filename)
-        return {"results": results}
+        results = search_documents(request.query, request.filename, request.n_results)
+        return {"results": results, "total": len(results), "query": request.query, "filename_filter": request.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/documents")
+async def get_documents():
+    """List all PDF documents currently indexed in the vector store."""
+    try:
+        docs = list_documents()
+        total_chunks = sum(d["chunks"] for d in docs)
+        return {"documents": docs, "total_documents": len(docs), "total_chunks": total_chunks}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/documents/{filename:path}")
+async def remove_document(filename: str):
+    """Remove all chunks for a given document from the vector store."""
+    try:
+        deleted = delete_document(filename)
+        if deleted == 0:
+            raise HTTPException(status_code=404, detail=f"No indexed chunks found for '{filename}'")
+        return {"message": f"Deleted {deleted} chunks for '{filename}'", "filename": filename, "chunks_deleted": deleted}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -77,16 +111,20 @@ async def search_endpoint(request: SearchRequest):
 async def upload_document(file: UploadFile = File(...)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
-        
+
     os.makedirs("stock_assistant/data/pdfs", exist_ok=True)
     temp_path = f"stock_assistant/data/pdfs/{file.filename}"
-    
+
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
+
     try:
-        ingest_pdf(temp_path)
-        return {"message": "Document ingested successfully", "filename": file.filename}
+        chunks_added = ingest_pdf(temp_path)
+        return {
+            "message": "Document ingested successfully",
+            "filename": file.filename,
+            "chunks_added": chunks_added,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to ingest PDF: {e}")
 
@@ -95,33 +133,30 @@ async def upload_document(file: UploadFile = File(...)):
 async def upload_csv(file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
-        
+
     os.makedirs("stock_assistant/data", exist_ok=True)
     temp_path = f"stock_assistant/data/{file.filename}"
-    
+
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
+
     try:
         row_count, columns = ingest_csv(temp_path)
         return {"message": "CSV ingested successfully", "rows_ingested": row_count, "columns": columns}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to ingest CSV: {e}")
 
+
 @app.get("/health")
 async def health_check():
     try:
         response = requests.get(OLLAMA_BASE_URL)
         if response.status_code == 200:
-            return {
-                "status": "ok", 
-                "llm_model": LLM_MODEL, 
-                "embed_model": EMBED_MODEL
-            }
-        else:
-            return {"status": "error", "detail": f"Ollama returned status code {response.status_code}"}
+            return {"status": "ok", "llm_model": LLM_MODEL, "embed_model": EMBED_MODEL}
+        return {"status": "error", "detail": f"Ollama returned status code {response.status_code}"}
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Ollama is unreachable at {OLLAMA_BASE_URL}: {e}")
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
