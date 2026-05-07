@@ -53,11 +53,7 @@ The API will be available at `http://localhost:8000/docs`.
 ## 🚀 Run the Frontend
 The project includes a Streamlit-based user interface for easier interaction.
 
-1. Activate the virtual environment:
-    ```bash
-    source myenv/bin/activate
-    ```
-2. Launch the Streamlit app:
+1. Launch the Streamlit app:
     ```bash
     streamlit run streamlit_app.py
     ```
