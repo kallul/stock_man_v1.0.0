@@ -5,8 +5,8 @@ load_dotenv()
 
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-LLM_MODEL = os.getenv("LLM_MODEL", "llama3.2")
-EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemma4")
+EMBED_MODEL = os.getenv("EMBED_MODEL", "qwen3-embedding")
 DB_PATH = os.getenv("DB_PATH", "stock_assistant/data/stocks.db")
 CHROMA_PATH = os.getenv("CHROMA_PATH", "stock_assistant/chroma_store")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "macro_docs")
