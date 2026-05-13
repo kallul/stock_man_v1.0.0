@@ -3,6 +3,123 @@ import requests
 
 st.set_page_config(page_title="Stock Research Assistant", layout="wide", page_icon="📈")
 
+def inject_custom_css():
+    st.markdown("""
+    <style>
+    /* Gradient Background for App */
+    .stApp {
+        background: linear-gradient(-45deg, #0b0f19, #1a2a42, #29323c, #1a1a2e);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+    }
+    
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* Make Header Transparent */
+    [data-testid="stHeader"] {
+        background: rgba(0,0,0,0) !important;
+    }
+
+    /* Sidebar Glassmorphism */
+    [data-testid="stSidebar"] {
+        background: rgba(25, 30, 45, 0.4) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Chat Messages Glassmorphism */
+    .stChatMessage {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Input Fields Glassmorphism */
+    .stTextInput input, .stNumberInput input, .stSelectbox > div > div {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Chat Input Container */
+    .stChatInputContainer {
+        background: rgba(20, 25, 40, 0.6) !important;
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+    }
+
+    /* Buttons Glassmorphism */
+    .stButton > button {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #e0e0e0 !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        transform: translateY(-2px);
+    }
+    
+    /* Primary Button */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, rgba(74, 144, 226, 0.5), rgba(80, 227, 194, 0.5)) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+    }
+
+    /* Expanders Glassmorphism */
+    [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Tabs */
+    [data-baseweb="tab-list"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 5px;
+    }
+    [data-baseweb="tab"] {
+        background: transparent !important;
+    }
+    [aria-selected="true"] {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+    }
+
+    /* Metric Values */
+    [data-testid="stMetricValue"] {
+        color: #50e3c2 !important;
+    }
+    
+    /* Fix text colors */
+    .stMarkdown, .stText {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    </style>
+    """, unsafe_allow_html=True)
+
+inject_custom_css()
+
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 def api(method: str, path: str, **kwargs):
